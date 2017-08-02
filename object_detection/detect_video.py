@@ -8,6 +8,12 @@ from collections import defaultdict
 from io import StringIO
 from utils import label_map_util
 from utils import visualization_utils as vis_util
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument("video_name", type=str)
+
+args = parser.parse_args()
 
 # Variables 
 # What model to download.
@@ -41,16 +47,23 @@ category_index = label_map_util.create_category_index(categories)
 # image1.jpg
 # image2.jpg
 # If you want to test the code with your images, just add path to the images to the TEST_IMAGE_PATHS.
-PATH_TO_TEST_IMAGES_DIR = 'test_images'
-TEST_IMAGE_PATHS = [ os.path.join(PATH_TO_TEST_IMAGES_DIR, 'image{}.jpg'.format(i)) for i in range(1, 3) ]
+#PATH_TO_TEST_IMAGES_DIR = 'test_images'
+#TEST_IMAGE_PATHS = [ os.path.join(PATH_TO_TEST_IMAGES_DIR, 'image{}.jpg'.format(i)) for i in range(1, 3) ]
 
 # Size, in inches, of the output images.
 IMAGE_SIZE = (12, 8)
 
+cap = cv2.VideoCapture(args.video_name)
+fourcc = cv2.VideoWriter_fourcc(*'XVID')
+out_video = cv2.VideoWriter('video.avi', fourcc, 30, (1280,720))
+
 with detection_graph.as_default():
   with tf.Session(graph=detection_graph) as sess:
-    for image_path in TEST_IMAGE_PATHS:
-      image_np = cv2.imread(image_path)
+    frame_count = 0 
+    while True:
+      grabbed, image_np = cap.read()
+      if not grabbed:
+         break
       # the array based representation of the image will be used later in order to prepare the
       # result image with boxes and labels on it.
       #image_np = np.asarray(image)
@@ -77,5 +90,9 @@ with detection_graph.as_default():
           category_index,
           use_normalized_coordinates=True,
           line_thickness=8)
-      cv2.imshow("image_path",image_np)
-      cv2.waitKey(0)
+      out_video.write(image_np)
+      frame_count += 1
+      print "Processed {} frames".format(frame_count)
+
+cap.release()
+out_video.release()
